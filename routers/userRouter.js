@@ -1,15 +1,17 @@
 const express = require("express")
 const userController = require("./../controllers/userController")
 const authController = require("./../controllers/authController")
-const Router = express.Router()
-Router.route("/")
-  .post(userController.newUser)
+const router = express.Router()
 
-Router.post("/login", authController.login)
-Router.post("/signup", authController.signup)
-Router.route("/:userId")
-  .get(userController.getUser)
-  .patch(userController.updateUser)
-  .delete(userController.deleteUser)
+router.route("/")
+  .post(authController.checkAuthority,userController.newUser)//only possible for admin->will be checking in router handler
+  
+router.route("/me")
+  .get(authController.checkAuthority,userController.getUser)
+  .patch(authController.checkAuthority,userController.updateUser)
+  .delete(authController.checkAuthority,userController.deleteUser)
 
-module.exports = Router
+router.post("/login", authController.login)
+router.post("/signup", authController.signup)
+
+module.exports = router

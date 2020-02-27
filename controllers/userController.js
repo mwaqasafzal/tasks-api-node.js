@@ -5,9 +5,11 @@ const respondFailure = require("./../utils/failureResponder")
 //CRUD to User
 exports.newUser = async (req, res) => {
   try {
+    if(req.user.type!=='admin')
+      throw new AppError(402,"unauthorized to do so")
     if (Object.keys(req.body).length == 0)
       throw new AppError(400, 'no user provided')
-
+    
     let user = new User(req.body)
     user = await user.save()
     res.status(200).json({
@@ -21,20 +23,13 @@ exports.newUser = async (req, res) => {
 }
 
 exports.getUser = async (req, res) => {
-
-  try {
-    const user = await User.findById(req.params.userId)
-    if (!user)
-      throw new AppError(404, "user not found")
-    res.json({
+  
+   const user=req.user
+   await user.populate('tasks',"-_id -owner description completed").execPopulate()
+   res.json({
       status: "success",
-      data: user
+      data:user
     })
-  }
-  catch (error) {
-    respondFailure(res, error)
-  }
-
 }
 exports.getAllUsers = async (req, res) => {
 
@@ -60,20 +55,17 @@ exports.updateUser = async (req, res) => {
     if (Object.keys(req.body).length == 0)
       throw new AppError(400, "no data provided to update")
 
-    let allowedUpdates = ["name", "email", "password"]
+    let allowedUpdates = ["name", "email", "password","confirmPassword"]//confirm pass is added because of update in password
     let askedUpdates = Object.keys(req.body)
     let isUpdateAllowed = askedUpdates.every(update => allowedUpdates.includes(update))
 
     if (!isUpdateAllowed)
       throw new AppError(400, "invalid request for update")
 
-    const user = await User.findByIdAndUpdate(req.params.userId, req.body, {
-      runValidators: true
-    })
-
-    if (!user)
-      throw new AppError(404, "user not found")
-
+    let user=req.user
+    askedUpdates.forEach(update=>user[update]=req.body[update])
+    await user.save()
+    
     res.json({
       status: "success",
       message: "user updated successfully"
@@ -86,9 +78,8 @@ exports.updateUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.userId)
-    if (!user)
-      throw new AppError(404, 'user not found')
+    
+    await req.user.remove()
     res.json({
       status: "success",
       message: "user deleted successfully"
@@ -97,5 +88,6 @@ exports.deleteUser = async (req, res) => {
   catch (error) {
     respondFailure(res, error)
   }
+
 }
 

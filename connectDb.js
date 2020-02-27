@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 
-const url = "mongodb://127.0.0.1:27017/task-api"
+const url = "mongodb://127.0.0.1:27017/tasks-api"
 
 mongoose.connect(url, {
   useNewUrlParser: true,
